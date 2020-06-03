@@ -117,16 +117,13 @@ defmodule Exchange do
 
   @impl true
   def handle_call({:send_instruction, %{instruction: :update, side: :ask} = event}, _from, state) do
-    with {:ok, offers} <-
-           OfferBook.update(
-             state.ask_offers,
-             event.price_level_index,
-             event.price,
-             event.quantity
-           ) do
-      new_state = %State{state | ask_offers: offers}
-      {:reply, :ok, new_state}
-    else
+    %{price: price, quantity: quantity, price_level_index: price_level_index} = event
+    %{ask_offers: ask_offers} = state
+
+    case OfferBook.update(ask_offers, price_level_index, price, quantity) do
+      {:ok, offers} ->
+        new_state = %State{state | ask_offers: offers}
+        {:reply, :ok, new_state}
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
